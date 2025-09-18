@@ -1,0 +1,44 @@
+name: Build Windows exe
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Update Rust
+        run: rustup update stable
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --force
+
+      - name: Build Tauri application
+        run: npm run tauri build
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: unity-extractor-windows
+          path: src-tauri/target/release/bundle/msi
