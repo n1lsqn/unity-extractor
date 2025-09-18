@@ -38,7 +38,7 @@ jobs:
         run: npm run tauri build
 
       - name: Upload Windows executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: unity-extractor-windows
           path: src-tauri/target/release/bundle/msi
