@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 function App() {
@@ -8,28 +7,39 @@ function App() {
   const [status, setStatus] = useState<string>("");
 
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    console.log("drop");
     event.preventDefault();
-    const file = event.dataTransfer.files
-    if (file.length > 0) {
-      setFilePath((file[0] as any).path);
+    const files = event.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0] as any;
+      const path = file.path || file.name;
+      console.log("dropped file path:", path);
+      setFilePath(path);
+    }
+  };
+
+  const handleClick = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("click");
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0] as any;
+      const path = file.path || file.name;
+      console.log("selected file path:", path);
+      setFilePath(path);
     }
   };
 
   const extract = async () => {
     if (!filePath) return;
-
-    const dir = await open({ directory: true});
-    if (!dir) return;
-
     setStatus("展開中...");
     try {
-      await invoke("extract_unitypackage", {
+      const folder = await invoke<string>("extract_unitypackage", {
         filePath,
-        outputDir: dir,
       })
-      setStatus("完了！");
+      setStatus("完了！ フォルダ: " + folder);
     } catch (error) {
-      setStatus("エラー: " + (error as Error).message);
+      console.error("Error extracting unitypackage:", error);
+      setStatus("エラーが発生しました: " + (error as any)?.message || (error as any)?.toString() || "不明なエラー");
     }
   };
 
@@ -37,14 +47,26 @@ function App() {
     <div
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      className="h-screen flex flex-col items-center justify-center border-2 border-dashed border-gray-400"
-    >
+      className="h-screen flex flex-col items-center justify-center border-2 border-dashed border-gray-400 cursor-pointer p-4"
+    > 
+      <input
+        type="file"
+        accept=".unitypackage"
+        onChange={handleClick}
+        className="mb-4"
+      />
+      
       <p className="mb-4">
-        {filePath ? `選択ファイル: ${filePath}` : "ここに .unitypackage をドラッグ&ドロップ"}
+        {filePath 
+          ? `選択ファイル: ${filePath}`  
+          : "ここに .unitypackage をドラッグ&ドロップ またはクリックして選択"
+        }
       </p>
+
       {filePath && (
         <button
           onClick={extract}
+          disabled={status === "展開中..."}
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           展開
